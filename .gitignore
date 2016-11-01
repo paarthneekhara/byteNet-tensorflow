@@ -1,0 +1,8 @@
+.DS_Store
+.idea*
+*.pdf
+*.jpg
+*.png
+*.pyc
+*.py.bak
+*.pem
