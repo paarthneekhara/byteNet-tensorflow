@@ -56,10 +56,8 @@ class Byte_net_model:
 		loss = self.loss(decoder_output, target_sentence)
 		print "loss", loss
 
-		target_probab = tf.nn.softmax(decoder_output, name = 'target_probab')
-		print "target_probab", target_probab
-
-
+		# target_probab = tf.nn.softmax(decoder_output, name = 'target_probab')
+		# print "target_probab", target_probab
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
 		print "prediction", prediction
