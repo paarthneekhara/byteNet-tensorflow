@@ -9,12 +9,16 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--learning_rate', type=float, default=0.001,
 					   help='Learning Rate')
-	parser.add_argument('--batch_size', type=int, default=32,
+	parser.add_argument('--batch_size', type=int, default=1,
 					   help='Learning Rate')
+	parser.add_argument('--max_epochs', type=int, default=1000,
+					   help='Max Epochs')
 	parser.add_argument('--beta1', type=float, default=0.5,
 					   help='Momentum for Adam Update')
 	parser.add_argument('--resume_model', type=str, default=None,
                        help='Pre-Trained Model Path, to resume from')
+	parser.add_argument('--data_dir', type=str, default='Data',
+                       help='Data Directory')
 
 
 	args = parser.parse_args()
@@ -47,22 +51,31 @@ def main():
 	if args.resume_model:
 		saver.restore(sess, args.resume_model)
 
-	text_samples = data_loader.load_text_samples(args.data_dir, model_config['sample_size'])
+	text_samples = data_loader.load_text_samples(args.data_dir, model_config.config['sample_size'])
 	print text_samples.shape
 
 	for i in range(args.max_epochs):
 		batch_no = 0
 		batch_size = args.batch_size
 		while (batch_no+1) * batch_size < text_samples.shape[0]:
-			text_batch = text_samples[batch_no*batch_size, (batch_no + 1)*batch_size]
+			text_batch = text_samples[batch_no*batch_size : (batch_no + 1)*batch_size, :]
+			print list_to_string(text_batch[0])
+			
 			_, loss, prediction = sess.run( [optim, bn_tensors['loss'], bn_tensors['prediction']], feed_dict = {
 				bn_tensors['sentence'] : text_batch
 				})
+			print list_to_string(prediction)
 			print "Loss"
 			print i, batch_no, loss
-			print prediction
+			# print prediction
 			batch_no += 1
 		save_path = saver.save(sess, "Data/Models/model_epoch_{}.ckpt".format(i))
+
+def list_to_string(ascii_list):
+	res = ""
+	for a in ascii_list:
+		res += str(chr(a))
+	return res
 
 if __name__ == '__main__':
 	main()

@@ -59,7 +59,9 @@ class Byte_net_model:
 		target_probab = tf.nn.softmax(decoder_output, name = 'target_probab')
 		print "target_probab", target_probab
 
-		prediction = tf.argmax(target_probab, 1)
+
+		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+		prediction = tf.argmax(flat_logits, 1)
 		print "prediction", prediction
 
 		variables = tf.trainable_variables()
@@ -85,10 +87,13 @@ class Byte_net_model:
 			depth = options['n_target_quant'],
 			dtype = tf.float32)
 		print "Target One Hot", target_one_hot
-		loss = tf.nn.softmax_cross_entropy_with_logits(decoder_output, target_one_hot, name='decoder_cross_entropy_loss')
+
+		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+		flat_targets = tf.reshape( target_one_hot, [-1, options['n_target_quant']])
+		loss = tf.nn.softmax_cross_entropy_with_logits(flat_logits, flat_targets, name='decoder_cross_entropy_loss')
 		print "Loss", loss
 		loss = tf.reduce_mean(loss, name = 'decoder_mean_loss')
-		
+
 		return loss
 
 
