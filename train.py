@@ -69,6 +69,7 @@ def main():
 			print i, batch_no, loss
 			# print prediction
 			batch_no += 1
+		
 		save_path = saver.save(sess, "Data/Models/model_epoch_{}.ckpt".format(i))
 
 def list_to_string(ascii_list):

@@ -6,3 +6,4 @@
 *.pyc
 *.py.bak
 *.pem
+*.ckpt

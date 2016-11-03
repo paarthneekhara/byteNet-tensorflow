@@ -142,7 +142,7 @@ class Byte_net_model:
 		dilated_conv = ops.dilated_conv1d(relu2, options['residual_channels'], 
 			dilation, options['encoder_filter_width'],
 			causal = False, 
-			name = "enc_dilated_conv_laye{}".format(layer_no)
+			name = "enc_dilated_conv_layer{}".format(layer_no)
 			)
 		relu3 = tf.nn.relu(dilated_conv, name = 'enc_relu1_layer{}'.format(layer_no))
 		conv2 = ops.conv1d(relu3, 2 * options['residual_channels'], name = 'enc_conv1d_2_layer{}'.format(layer_no))

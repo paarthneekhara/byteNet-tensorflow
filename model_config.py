@@ -5,6 +5,8 @@ config = {
 	"decoder_dilations": [1, 2, 4, 8, 16,
 						  1, 2, 4, 8, 16,
 						  1, 2, 4, 8, 16,
+						  1, 2, 4, 8, 16,
+						  1, 2, 4, 8, 16,
 						  ],
 	"residual_channels": 512,
 	"n_target_quant": 256,
