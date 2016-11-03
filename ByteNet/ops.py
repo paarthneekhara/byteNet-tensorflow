@@ -2,8 +2,9 @@ import tensorflow as tf
 
 def time_to_batch(value, dilation, name=None):
 	with tf.name_scope('time_to_batch'):
-		shape = tf.shape(value)
-		pad_elements = dilation - 1 - (shape[1] + dilation - 1) % dilation
+		shape = value.get_shape()
+		shape = [int(s) for s in shape]
+		pad_elements = dilation - 1 - (int(shape[1]) + dilation - 1) % dilation
 		padded = tf.pad(value, [[0, 0], [0, pad_elements], [0, 0]])
 		reshaped = tf.reshape(padded, [-1, dilation, shape[2]])
 		transposed = tf.transpose(reshaped, perm=[1, 0, 2])
@@ -11,11 +12,12 @@ def time_to_batch(value, dilation, name=None):
 
 def batch_to_time(value, dilation, name=None):
 	with tf.name_scope('batch_to_time'):
-		shape = tf.shape(value)
+		shape = value.get_shape()
+		shape = [int(s) for s in shape]
 		prepared = tf.reshape(value, [dilation, -1, shape[2]])
 		transposed = tf.transpose(prepared, perm=[1, 0, 2])
 		return tf.reshape(transposed,
-						  [tf.div(shape[0], dilation), -1, shape[2]])
+						  [(shape[0]/dilation), -1, shape[2]])
 
 def conv1d(input_, output_channels, 
 	filter_width = 1, stride = 1, stddev=0.02,
@@ -28,28 +30,33 @@ def conv1d(input_, output_channels,
 		conv = tf.nn.conv1d(input_, filter_, stride = stride, padding = 'SAME')
 		biases = tf.get_variable('biases', [output_channels], initializer=tf.constant_initializer(0.0))
 		conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
-
 		return conv
 
 def dilated_conv1d(input_, output_channels, dilation, 
 	filter_width = 1, causal = False, name = 'dilated_conv'):
+	
 	if causal:
+		# padding for masked convolution
 		padding = [[0, 0], [(filter_width - 1) * dilation, 0], [0, 0]]
 		padded = tf.pad(input_, padding)
 	else:
 		padding = [[0, 0], [(filter_width - 1) * dilation/2, (filter_width - 1) * dilation/2], [0, 0]]
 		padded = tf.pad(input_, padding)
-
+	print "*****"
+	print "padded", padded	
 	if dilation > 1:
 		transformed = time_to_batch(padded, dilation)
+		print "transformed", transformed
 		conv = conv1d(transformed, output_channels, filter_width, name = name)
+		print "conv", conv
 		restored = batch_to_time(conv, dilation)
+		print "restored", restored
 	else:
 		restored = conv1d(padded, output_channels, filter_width, name = name)
 
-	
-
-	if dilation > 1:
+	result = tf.slice(restored,[0, 0, 0],[-1, int(input_.get_shape()[1]), -1])
+	print "********"
+	return result
 
 
 
