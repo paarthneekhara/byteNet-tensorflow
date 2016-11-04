@@ -12,6 +12,7 @@ From the abstract
 
 Image Source - [Neural Machine Translation in Linear Time][1] paper
 
+The model applies dilated 1d convolutions on the sequential data, layer by layer to obain the input encoding. The decoder then applies masked 1d convolutions on the target sequence(combined with the encoding)to obtain the next character in the target sequence.The character generation model is just the byteNet decoder, while the machine translation model is combined encoder and decoder.
 
 ## Implementation Notes
 1. The model has been defined in ```ByteNet/model.py```. ```ByteNet/ops.py``` contains the dilated convolution implementation (adapted from [tensorflow wavenet][2] ).
