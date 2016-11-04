@@ -1,5 +1,7 @@
 # byteNet-tensorflow
 
+[![Join the chat at https://gitter.im/byteNet-tensorflow/Lobby](https://badges.gitter.im/byteNet-tensorflow/Lobby.svg)](https://gitter.im/byteNet-tensorflow/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is a tensorflow implementation of the byteNet model from the paper [Neural Machine Translation in Linear Time][1]. 
 
 From the abstract
