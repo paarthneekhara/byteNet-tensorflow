@@ -32,6 +32,7 @@ Generate new text samples using
 Note - This is not the most efficient generator implementation. Refer to tensorflow wavenet generator implementation for a faster generator.
 
 ## Samples Generated
+I haven't experimented much as of now. Following are some text sample hallucinated by the network
 seed = "ANTONIO"
 ```
 ANTONIO:
@@ -51,7 +52,15 @@ That thou dost see the bear that was the foot,
 
 seed = "PORTIA"
 ```
+PORTIA:
+What say these fairs, man? what say these samese me?
 
+First Citizen:
+The king is so indeed, sir, the sin, that I was,
+That the best contrary to the court of France,
+That thou wert bear to the mouth of this son,
+That thou dost speak to me and the sense of France,
+That thou dost stand and stand and true and souls,
 ```
 
 ## Pretrained Model
