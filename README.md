@@ -12,16 +12,19 @@ Image Source - [Neural Machine Translation in Linear Time][1] paper
 
 
 ## Implementation Notes
-1. The model has been defined in ```ByteNet/model.py```. ```ByteNet/ops.py``` contains the dilated convolution implementation (adapted from [tensorflow wavenet][2].
+1. The model has been defined in ```ByteNet/model.py```. ```ByteNet/ops.py``` contains the dilated convolution implementation (adapted from [tensorflow wavenet][2] ).
 2. The model can be configured by editing model_config.py.
-3. Sub-batch normalisation has not been implemented
+3. Sub-batch normalisation has not been implemented.
 4. The model (byteNet decoder) has been tested on character generation and not machine transalation. (Work in progress).
 
 ## Datasets
 The model has been trained on Shakespeare text (the same dataset which was used in Karpathy's blog). I have included the text file in the repository ```Data/shakespeare.txt```.
 
 ## Training
-Configure the model by editing ```model_config.py```. Use ```python train.py --data_dir=PATH_TO_FOLDER_CONTAINING_TXT_FILES``` .
+Configure the model by editing ```model_config.py```. Train on a text corpus by
+
+```python train.py --data_dir=PATH_TO_FOLDER_CONTAINING_TXT_FILES```
+
 ```python train.py --help``` for more options.
 
 ## Text Generation
@@ -35,7 +38,7 @@ Note - This is not the most efficient generator implementation. Refer to tensorf
 I haven't experimented much as of now. Following are some text sample hallucinated by the network
 
 
-1. seed = "ANTONIO"
+seed = "ANTONIO"
 ```
 ANTONIO:
 What say you to this part of this to thee?
@@ -52,7 +55,7 @@ That thou dost see the bear that was the foot,
 
 ```
 
-2. seed = "PORTIA"
+seed = "PORTIA"
 ```
 PORTIA:
 What say these fairs, man? what say these samese me?
