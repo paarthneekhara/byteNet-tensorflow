@@ -33,7 +33,9 @@ Note - This is not the most efficient generator implementation. Refer to tensorf
 
 ## Samples Generated
 I haven't experimented much as of now. Following are some text sample hallucinated by the network
-seed = "ANTONIO"
+
+
+1. seed = "ANTONIO"
 ```
 ANTONIO:
 What say you to this part of this to thee?
@@ -50,7 +52,7 @@ That thou dost see the bear that was the foot,
 
 ```
 
-seed = "PORTIA"
+2. seed = "PORTIA"
 ```
 PORTIA:
 What say these fairs, man? what say these samese me?
