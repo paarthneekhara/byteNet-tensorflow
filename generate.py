@@ -18,6 +18,9 @@ def main():
 	parser.add_argument('--num_char', type=int, default=1000,
                        help='seed')
 
+	parser.add_argument('--output_file', type=str, default='sample.txt',
+                       help='Output File')
+
 
 	args = parser.parse_args()
 	
@@ -59,7 +62,10 @@ def main():
 		last_prediction =  prediction[ prediction.shape[0] - 1 ]
 		last_prediction = last_prediction.reshape([1,-1])
 		input_batch = np.concatenate((input_batch, last_prediction), axis = 1)
-		print list_to_string(input_batch[0])
+		res = list_to_string(input_batch[0])
+		print res
+		with open(args.output_file, 'wb') as f:
+			f.write(res)
 
 def list_to_string(ascii_list):
 	res = ""
