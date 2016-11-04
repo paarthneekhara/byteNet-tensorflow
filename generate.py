@@ -13,7 +13,9 @@ def main():
                        help='Pre-Trained Model Path')
 	parser.add_argument('--data_dir', type=str, default='Data',
                        help='Data Directory')
-	parser.add_argument('--seed', type=str, default='PORTIA',
+	parser.add_argument('--seed', type=str, default="ANTONIO",
+                       help='seed')
+	parser.add_argument('--num_char', type=int, default=1000,
                        help='seed')
 
 
@@ -33,28 +35,38 @@ def main():
 		'batch_size' : 1,
 	}
 
-	seed_ = [ ord(s) for s in seed ]
+	seed_ = [ ord(s) for s in args.seed ]
 	seed_ = np.array(seed_, dtype='int32')
-	seed_.reshape([1, -1])
+	seed_ = seed_.reshape([1, -1])
 
 	byte_net = model.Byte_net_model( model_options )
-	generator = byte_net.build_generator( len(seed) )
+	generator = byte_net.build_generator( len(args.seed) )
 	
 	sess = tf.InteractiveSession()
 	saver = tf.train.Saver()
 	saver.restore(sess, args.model_path)
 
 	input_batch = seed_
-	for i in range(0, 200):
-		generator = byte_net.build_generator( input_batch.shape[0] )
+	print "INPUT", input_batch
+	for i in range(0, args.num_char):
+		generator = byte_net.build_generator( input_batch.shape[1], reuse = True)
 		prediction = sess.run( [generator['prediction']], 
 			feed_dict = {
-				generator['sentence'] : input_batch
+				generator['source_sentence'] : input_batch
 				})
-		print i, prediction
-		last_prediction = prediction[prediction.shape[0] - 1 ]
+		prediction = prediction[0]
+		
+		last_prediction =  prediction[ prediction.shape[0] - 1 ]
+		last_prediction = last_prediction.reshape([1,-1])
 		input_batch = np.concatenate((input_batch, last_prediction), axis = 1)
+		print list_to_string(input_batch[0])
 
+def list_to_string(ascii_list):
+	res = ""
+	for a in ascii_list:
+		res += str(chr(a))
+	return res
 
-
+if __name__ == '__main__':
+	main()
 

@@ -66,7 +66,10 @@ class Byte_net_model:
 
 		return tensors
 
-	def build_generator(self, sample_size):
+	def build_generator(self, sample_size, reuse = False):
+		if reuse:
+			tf.get_variable_scope().reuse_variables()
+		options = self.options
 		source_sentence = tf.placeholder('int32', [1, sample_size], name = 'sentence')
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
 		decoder_output = self.decoder(source_embedding)
@@ -78,10 +81,8 @@ class Byte_net_model:
 			'prediction' : prediction
 		}
 
-	def predict_next_char(self, char_list):
-		gen = self.build_generator(len(char_list))
-		return gen
-
+		return tensors
+		
 	def loss(self, decoder_output, target_sentence):
 		options = self.options
 		target_one_hot = tf.one_hot(target_sentence, 
