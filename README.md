@@ -35,7 +35,7 @@ Generate new text samples using
 Note - This is not the most efficient generator implementation. Refer to tensorflow wavenet generator implementation for a faster generator.
 
 ## Samples Generated
-I haven't experimented much as of now. Following are some text sample hallucinated by the network
+I haven't experimented much as of now. Following are some text samples hallucinated by the network
 
 
 seed = "ANTONIO"
