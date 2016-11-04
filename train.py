@@ -59,18 +59,20 @@ def main():
 		batch_size = args.batch_size
 		while (batch_no+1) * batch_size < text_samples.shape[0]:
 			text_batch = text_samples[batch_no*batch_size : (batch_no + 1)*batch_size, :]
-			print list_to_string(text_batch[0])
-			
 			_, loss, prediction = sess.run( [optim, bn_tensors['loss'], bn_tensors['prediction']], feed_dict = {
 				bn_tensors['sentence'] : text_batch
 				})
+			print "-------------------------------------------------------"
 			print list_to_string(prediction)
 			print "Loss"
+
 			print i, batch_no, loss
+			print "********************************************************"
 			# print prediction
 			batch_no += 1
-		
-		save_path = saver.save(sess, "Data/Models/model_epoch_{}.ckpt".format(i))
+			
+			if (batch_no % 100) == 0:
+				save_path = saver.save(sess, "Data/Models/model_epoch_{}.ckpt".format(i))
 
 def list_to_string(ascii_list):
 	res = ""

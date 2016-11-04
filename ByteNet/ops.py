@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 def time_to_batch(value, dilation, name=None):
+	# FOR DILATED CONVOLUTION, code adpated from tensorflow-wavenet
 	with tf.name_scope('time_to_batch'):
 		shape = value.get_shape()
 		shape = [int(s) for s in shape]
@@ -42,20 +43,16 @@ def dilated_conv1d(input_, output_channels, dilation,
 	else:
 		padding = [[0, 0], [(filter_width - 1) * dilation/2, (filter_width - 1) * dilation/2], [0, 0]]
 		padded = tf.pad(input_, padding)
-	print "*****"
-	print "padded", padded	
+	
 	if dilation > 1:
 		transformed = time_to_batch(padded, dilation)
-		print "transformed", transformed
 		conv = conv1d(transformed, output_channels, filter_width, name = name)
-		print "conv", conv
 		restored = batch_to_time(conv, dilation)
-		print "restored", restored
 	else:
 		restored = conv1d(padded, output_channels, filter_width, name = name)
 
 	result = tf.slice(restored,[0, 0, 0],[-1, int(input_.get_shape()[1]), -1])
-	print "********"
+	
 	return result
 
 

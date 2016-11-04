@@ -7,3 +7,5 @@
 *.py.bak
 *.pem
 *.ckpt
+awstransfer.sh
+Data/Models/*
