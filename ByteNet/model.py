@@ -29,6 +29,46 @@ class Byte_net_model:
 			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
 
+	def build_translation_model(self):
+		options = self.options
+		source_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']], name = 'source_sentence')
+		target_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']+1], name = 'target_sentence')
+
+		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
+
+		# Input to decoder
+		target_sentence1 = tf.slice(target_sentence, 
+			[0,0], 
+			[options['batch_size'], options['sample_size']], 
+			name = 'target_sentence1')
+		target1_embedding = tf.nn.embedding_lookup(self.w_target_embedding, target_sentence1, name = "target1_embedding")
+
+		# Output of the decoder
+		target_sentence2 = tf.slice(target_sentence, 
+			[0,1], 
+			[options['batch_size'], options['sample_size']], 
+			name = 'target_sentence2')
+
+		encoder_output = self.encoder(source_embedding)
+		decoder_output = self.decoder(target1_embedding, encoder_output)
+
+		loss = self.loss(decoder_output, target_sentence2)
+
+		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+		prediction = tf.argmax(flat_logits, 1)
+		
+		variables = tf.trainable_variables()
+		
+		tensors = {
+			'source_sentence' : source_sentence,
+			'target_sentence' : target_sentence,
+			'loss' : loss,
+			'prediction' : prediction,
+			'variables' : variables
+		}
+		
+		return tensors
+
 
 	def build_prediction_model(self):
 		options = self.options
@@ -48,9 +88,6 @@ class Byte_net_model:
 		decoder_output = self.decoder(source_embedding)
 		loss = self.loss(decoder_output, target_sentence)
 		
-
-		# target_probab = tf.nn.softmax(decoder_output, name = 'target_probab')
-		# print "target_probab", target_probab
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
 		
@@ -66,15 +103,25 @@ class Byte_net_model:
 
 		return tensors
 
-	def build_generator(self, sample_size, reuse = False):
+	def build_generator(self, sample_size, reuse = False, num_chars = 50):
 		if reuse:
 			tf.get_variable_scope().reuse_variables()
 		options = self.options
+		
 		source_sentence = tf.placeholder('int32', [1, sample_size], name = 'sentence')
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
 		decoder_output = self.decoder(source_embedding)
+
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
+
+		sentence = source_sentence
+		for i in range(0, num_chars):
+			sentence = tf.concat(1, [sentence, prediction])
+			source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, sentence, name = "source_embedding")
+			decoder_output = self.decoder(source_embedding)
+			flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+			prediction = tf.argmax(flat_logits, 1)
 
 		tensors = {
 			'source_sentence' : source_sentence,
@@ -82,7 +129,7 @@ class Byte_net_model:
 		}
 
 		return tensors
-		
+
 	def loss(self, decoder_output, target_sentence):
 		options = self.options
 		target_one_hot = tf.one_hot(target_sentence, 
@@ -116,11 +163,16 @@ class Byte_net_model:
 		
 		return input_ + conv2
 
-	def decoder(self, input_):
+	def decoder(self, input_, encoder_embedding = None):
 		options = self.options
 		curr_input = input_
 		for layer_no, dilation in enumerate(options['decoder_dilations']):
 			layer_output = self.decode_layer(curr_input, dilation, layer_no)
+			
+			# FOR TRANSLATION MODEL - add the input embedding after the first layer
+			if encoder_embedding and layer_no == 0:
+				layer_output = layer_output + encoder_embedding
+
 			curr_input = layer_output
 
 
@@ -153,4 +205,10 @@ class Byte_net_model:
 		for layer_no, dilation in enumerate(self.options['dilations']):
 			layer_output = self.encode_layer(curr_input, dilation, layer_no)
 			curr_input = layer_output
-		return layer_output
+		
+		processed_output = ops.conv1d(tf.nn.relu(layer_output), 
+			2 * options['residual_channels'], 
+			name = 'encoder_post_processing')
+
+		return processed_output
+
