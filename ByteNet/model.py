@@ -29,8 +29,10 @@ class Byte_net_model:
 			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
 
-	def build_translation_model(self):
+	def build_translation_model(self, sample_size):
+		self.options['sample_size'] = sample_size
 		options = self.options
+		print "Sample Size", options['sample_size']
 		source_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']], name = 'source_sentence')
 		target_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']+1], name = 'target_sentence')
 
@@ -58,7 +60,7 @@ class Byte_net_model:
 		prediction = tf.argmax(flat_logits, 1)
 		
 		variables = tf.trainable_variables()
-		
+
 		tensors = {
 			'source_sentence' : source_sentence,
 			'target_sentence' : target_sentence,
@@ -103,25 +105,18 @@ class Byte_net_model:
 
 		return tensors
 
-	def build_generator(self, sample_size, reuse = False, num_chars = 50):
+	def build_translator(self, source_size, target_size):
+		return
+
+	def build_generator(self, sample_size, reuse = False):
 		if reuse:
 			tf.get_variable_scope().reuse_variables()
 		options = self.options
-		
 		source_sentence = tf.placeholder('int32', [1, sample_size], name = 'sentence')
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
 		decoder_output = self.decoder(source_embedding)
-
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
-
-		sentence = source_sentence
-		for i in range(0, num_chars):
-			sentence = tf.concat(1, [sentence, prediction])
-			source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, sentence, name = "source_embedding")
-			decoder_output = self.decoder(source_embedding)
-			flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
-			prediction = tf.argmax(flat_logits, 1)
 
 		tensors = {
 			'source_sentence' : source_sentence,
@@ -158,7 +153,7 @@ class Byte_net_model:
 			name = "dec_dilated_conv_laye{}".format(layer_no)
 			)
 		
-		relu3 = tf.nn.relu(dilated_conv, name = 'dec_relu1_layer{}'.format(layer_no))
+		relu3 = tf.nn.relu(dilated_conv, name = 'dec_relu3_layer{}'.format(layer_no))
 		conv2 = ops.conv1d(relu3, 2 * options['residual_channels'], name = 'dec_conv1d_2_layer{}'.format(layer_no))
 		
 		return input_ + conv2
@@ -170,7 +165,7 @@ class Byte_net_model:
 			layer_output = self.decode_layer(curr_input, dilation, layer_no)
 			
 			# FOR TRANSLATION MODEL - add the input embedding after the first layer
-			if encoder_embedding and layer_no == 0:
+			if encoder_embedding != None and layer_no == 0:
 				layer_output = layer_output + encoder_embedding
 
 			curr_input = layer_output
@@ -194,15 +189,15 @@ class Byte_net_model:
 			causal = False, 
 			name = "enc_dilated_conv_layer{}".format(layer_no)
 			)
-		relu3 = tf.nn.relu(dilated_conv, name = 'enc_relu1_layer{}'.format(layer_no))
+		relu3 = tf.nn.relu(dilated_conv, name = 'enc_relu3_layer{}'.format(layer_no))
 		conv2 = ops.conv1d(relu3, 2 * options['residual_channels'], name = 'enc_conv1d_2_layer{}'.format(layer_no))
 		return input_ + conv2
 		
-	def encoder(input_):
+	def encoder(self, input_):
 		# HAVEN'T TESTED ENCODER
 		options = self.options
 		curr_input = input_
-		for layer_no, dilation in enumerate(self.options['dilations']):
+		for layer_no, dilation in enumerate(self.options['encoder_dilations']):
 			layer_output = self.encode_layer(curr_input, dilation, layer_no)
 			curr_input = layer_output
 		
