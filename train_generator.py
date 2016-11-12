@@ -4,6 +4,7 @@ import argparse
 import model_config
 import data_loader
 from ByteNet import model
+import utlils
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -26,7 +27,7 @@ def main():
 	
 	# model_config = json.loads( open('model_config.json').read() )
 	
-	config = model_config.config
+	config = model_config.predictor_config
 
 	model_options = {
 		'n_source_quant' : config['n_source_quant'],
@@ -64,22 +65,15 @@ def main():
 				bn_tensors['sentence'] : text_batch
 				})
 			print "-------------------------------------------------------"
-			print list_to_string(prediction)
+			print utlils.list_to_string(prediction)
 			print "Loss"
-
 			print i, batch_no, loss
 			print "********************************************************"
 			# print prediction
 			batch_no += 1
 			
-			if (batch_no % 100) == 0:
+			if (batch_no % 500) == 0:
 				save_path = saver.save(sess, "Data/Models/model_epoch_{}.ckpt".format(i))
-
-def list_to_string(ascii_list):
-	res = ""
-	for a in ascii_list:
-		res += str(chr(a))
-	return res
 
 if __name__ == '__main__':
 	main()

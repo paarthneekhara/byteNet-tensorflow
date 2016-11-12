@@ -9,3 +9,5 @@
 *.ckpt
 awstransfer.sh
 Data/Models/*
+logs/*
+Data/MachineTranslation

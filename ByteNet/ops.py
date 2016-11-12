@@ -36,11 +36,13 @@ def conv1d(input_, output_channels,
 def dilated_conv1d(input_, output_channels, dilation, 
 	filter_width = 1, causal = False, name = 'dilated_conv'):
 	
+	
 	if causal:
 		# padding for masked convolution
 		padding = [[0, 0], [(filter_width - 1) * dilation, 0], [0, 0]]
 		padded = tf.pad(input_, padding)
 	else:
+		
 		padding = [[0, 0], [(filter_width - 1) * dilation/2, (filter_width - 1) * dilation/2], [0, 0]]
 		padded = tf.pad(input_, padding)
 	
@@ -51,6 +53,7 @@ def dilated_conv1d(input_, output_channels, dilation,
 	else:
 		restored = conv1d(padded, output_channels, filter_width, name = name)
 
+	
 	result = tf.slice(restored,[0, 0, 0],[-1, int(input_.get_shape()[1]), -1])
 	
 	return result

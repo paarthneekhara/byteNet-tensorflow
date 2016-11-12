@@ -1,8 +1,6 @@
 import tensorflow as tf
+import numpy as np
 import ops
-
-# def create_variables:
-
 
 class Byte_net_model:
 	def __init__(self, options):
@@ -29,16 +27,45 @@ class Byte_net_model:
 			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
 
+		if 'source_mask_chars' in options:
+			# FOR EMBEDDING ONLY THE INPUT SENTENCE BEFOR THE PADDING
+			# THE OUTPUT NETWORK WHOULD BE CONDITIONED ONLY UPTO INPUT LENGTH
+			# ALSO LOSS NEEDS TO BE CALCULATED UPTO TARGET SENTENCE
+			input_sentence_mask = np.ones( 
+				(options['n_source_quant'], 2 * options['residual_channels']), dtype = 'float32')
+
+
+			input_sentence_mask[options['source_mask_chars'], :] = np.zeros(
+				(1,2 * options['residual_channels'] ), dtype = 'float32')
+
+			output_sentence_mask = np.ones( 
+				(options['n_target_quant'], 1), dtype = 'float32')
+			
+			output_sentence_mask[options['target_mask_chars'], :] = np.zeros(
+				(1,1), dtype = 'float32')
+
+			self.input_mask = tf.constant(input_sentence_mask)
+			self.output_mask = tf.constant(output_sentence_mask)
+
 	def build_translation_model(self, sample_size):
 		self.options['sample_size'] = sample_size
 		options = self.options
 		print "Sample Size", options['sample_size']
 		source_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']], name = 'source_sentence')
+		print source_sentence
+
 		target_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']+1], name = 'target_sentence')
+		
+		self.source_masked = tf.nn.embedding_lookup(self.input_mask, source_sentence, name = "source_masked")
+		
 
-		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
+		
 
-		# Input to decoder
+		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence)
+		source_embedding = tf.mul(source_embedding, self.source_masked, name = "source_embedding")
+		
+
+		# Input to the decoder
 		target_sentence1 = tf.slice(target_sentence, 
 			[0,0], 
 			[options['batch_size'], options['sample_size']], 
@@ -51,24 +78,36 @@ class Byte_net_model:
 			[options['batch_size'], options['sample_size']], 
 			name = 'target_sentence2')
 
+		self.target_masked = tf.nn.embedding_lookup(self.output_mask, target_sentence2, name = "target_masked")
+		print "Target Masked", self.target_masked
+
 		encoder_output = self.encoder(source_embedding)
 		decoder_output = self.decoder(target1_embedding, encoder_output)
 
 		loss = self.loss(decoder_output, target_sentence2)
+
+		tf.scalar_summary('LOSS', loss)
 
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
 		
 		variables = tf.trainable_variables()
 
+		merged_summary = tf.merge_all_summaries()
+		
 		tensors = {
 			'source_sentence' : source_sentence,
 			'target_sentence' : target_sentence,
 			'loss' : loss,
 			'prediction' : prediction,
-			'variables' : variables
+			'variables' : variables,
+			'merged_summary' : merged_summary,
+			'source_embedding' : source_embedding,
+			'encoder_output' : encoder_output,
+			'target_masked' : self.target_masked,
+			'source_masked' : self.source_masked,
 		}
-		
+
 		return tensors
 
 
@@ -90,6 +129,8 @@ class Byte_net_model:
 		decoder_output = self.decoder(source_embedding)
 		loss = self.loss(decoder_output, target_sentence)
 		
+		tf.scalar_summary('LOSS', loss)
+
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
 		
@@ -105,8 +146,34 @@ class Byte_net_model:
 
 		return tensors
 
-	def build_translator(self, source_size, target_size):
-		return
+	def build_translator(self, sample_size, reuse = False):
+		if reuse:
+			tf.get_variable_scope().reuse_variables()
+
+		options = self.options
+		source_sentence = tf.placeholder('int32', [1, sample_size], name = 'source_sentence')
+		target_sentence = tf.placeholder('int32', [1, sample_size], name = 'target_sentence')
+
+		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
+		target1_embedding = tf.nn.embedding_lookup(self.w_target_embedding, target_sentence, name = "target1_embedding")
+
+		encoder_output = self.encoder(source_embedding)
+		decoder_output = self.decoder(target1_embedding, encoder_output)
+
+		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+		prediction = tf.argmax(flat_logits, 1)
+		#prediction = tf.nn.softmax(flat_logits)
+		#gradient1  = tf.gradients(prediction, [source_sentence])
+		#gradient2  = tf.gradients(prediction, [target_sentence])
+		tensors = {
+			'source_sentence' : source_sentence,
+			'target_sentence' : target_sentence,
+			'prediction' : prediction,
+			'encoder_output': encoder_output,
+			#'gradient2' : gradient2
+		}
+
+		return tensors
 
 	def build_generator(self, sample_size, reuse = False):
 		if reuse:
@@ -116,11 +183,14 @@ class Byte_net_model:
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
 		decoder_output = self.decoder(source_embedding)
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
-		prediction = tf.argmax(flat_logits, 1)
 
+
+		prediction = tf.argmax(flat_logits, 1)
+		probs = tf.nn.softmax(flat_logits)
 		tensors = {
 			'source_sentence' : source_sentence,
-			'prediction' : prediction
+			'prediction' : prediction,
+			'probs' : probs
 		}
 
 		return tensors
@@ -134,8 +204,11 @@ class Byte_net_model:
 
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		flat_targets = tf.reshape( target_one_hot, [-1, options['n_target_quant']])
+		target_masked = tf.reshape( self.target_masked, [-1])
 		loss = tf.nn.softmax_cross_entropy_with_logits(flat_logits, flat_targets, name='decoder_cross_entropy_loss')
-		loss = tf.reduce_mean(loss, name = 'decoder_mean_loss')
+		loss = tf.mul( loss, target_masked, name = 'masked_loss')
+
+		loss = tf.div( tf.reduce_sum(loss),tf.reduce_sum(target_masked), name = "Reduced_mean_loss")
 
 		return loss
 
@@ -166,6 +239,7 @@ class Byte_net_model:
 			
 			# FOR TRANSLATION MODEL - add the input embedding after the first layer
 			if encoder_embedding != None and layer_no == 0:
+				print "Conditioning Encoder"
 				layer_output = layer_output + encoder_embedding
 
 			curr_input = layer_output
@@ -194,16 +268,19 @@ class Byte_net_model:
 		return input_ + conv2
 		
 	def encoder(self, input_):
-		# HAVEN'T TESTED ENCODER
 		options = self.options
 		curr_input = input_
 		for layer_no, dilation in enumerate(self.options['encoder_dilations']):
 			layer_output = self.encode_layer(curr_input, dilation, layer_no)
+
+			# ENCODE ONLY TILL THE INPUT LENGTH, conditioning should be 0 beyond that
+			layer_output = tf.mul(layer_output, self.source_masked, name = 'layer_{}_output'.format(layer_no))
+
 			curr_input = layer_output
 		
-		processed_output = ops.conv1d(tf.nn.relu(layer_output), 
+		processed_output = tf.nn.relu( ops.conv1d(tf.nn.relu(layer_output), 
 			2 * options['residual_channels'], 
-			name = 'encoder_post_processing')
+			name = 'encoder_post_processing') )
 
+		processed_output = tf.mul(processed_output, self.source_masked, name = 'encoder_processed')
 		return processed_output
-
