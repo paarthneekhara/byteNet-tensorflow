@@ -57,7 +57,9 @@ class Byte_net_model:
 		target_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']+1], name = 'target_sentence')
 		
 		self.source_masked = tf.nn.embedding_lookup(self.input_mask, source_sentence, name = "source_masked")
-		
+		self.source_masked_d = tf.slice(self.source_masked, [0,0,0], 
+			[options['batch_size'], options['sample_size'], options['residual_channels']],
+			name = 'source_masked_d')
 
 		
 
@@ -106,6 +108,8 @@ class Byte_net_model:
 			'encoder_output' : encoder_output,
 			'target_masked' : self.target_masked,
 			'source_masked' : self.source_masked,
+			'source_gradient' : tf.gradients(loss, [source_embedding]),
+			'target_gradient' : tf.gradients(loss, [target1_embedding]),
 		}
 
 		return tensors
@@ -257,12 +261,14 @@ class Byte_net_model:
 		options = self.options
 		relu1 = tf.nn.relu(input_, name = 'enc_relu1_layer{}'.format(layer_no))
 		conv1 = ops.conv1d(relu1, options['residual_channels'], name = 'enc_conv1d_1_layer{}'.format(layer_no))
+		conv1 = tf.mul(conv1, self.source_masked_d)
 		relu2 = tf.nn.relu(conv1, name = 'enc_relu2_layer{}'.format(layer_no))
 		dilated_conv = ops.dilated_conv1d(relu2, options['residual_channels'], 
 			dilation, options['encoder_filter_width'],
 			causal = False, 
 			name = "enc_dilated_conv_layer{}".format(layer_no)
 			)
+		dilated_conv = tf.mul(dilated_conv, self.source_masked_d)
 		relu3 = tf.nn.relu(dilated_conv, name = 'enc_relu3_layer{}'.format(layer_no))
 		conv2 = ops.conv1d(relu3, 2 * options['residual_channels'], name = 'enc_conv1d_2_layer{}'.format(layer_no))
 		return input_ + conv2

@@ -9,7 +9,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--learning_rate', type=float, default=0.001,
 					   help='Learning Rate')
-	parser.add_argument('--batch_size', type=int, default=32,
+	parser.add_argument('--batch_size', type=int, default=1,
 					   help='Learning Rate')
 	parser.add_argument('--bucket_quant', type=int, default=25,
 					   help='Learning Rate')
@@ -33,6 +33,7 @@ def main():
 		'source_file' : args.source_file,
 		'target_file' : args.target_file,
 		'bucket_quant' : args.bucket_quant,
+		'max_sentences' : 1000
 	}
 
 	dl = data_loader_v2.Data_Loader(data_loader_options)
@@ -110,24 +111,29 @@ def main():
 					buckets[key][batch_no * batch_size : (batch_no+1) * batch_size] 
 				)
 
-				_, loss, prediction, summary = sess.run( 
+				_, loss, prediction, summary, source_gradient, target_gradient = sess.run( 
 					[optim, bn_tensors['loss'], bn_tensors['prediction'],
-					 bn_tensors['merged_summary']], 
+					 bn_tensors['merged_summary'], bn_tensors['source_gradient'], bn_tensors['target_gradient']], 
 					feed_dict = {
 						bn_tensors['source_sentence'] : source,
 						bn_tensors['target_sentence'] : target,
+
 					})
 				
 				train_writer.add_summary(summary, batch_no * (cnt + 1))
 				print "Loss", loss, batch_no, len(buckets[key])/batch_size, i, cnt, key
 				
-				print "*****"
+				print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
 				print "Source ", dl.inidices_to_string(source[0], source_vocab)
 				print "---------"
 				print "Target ", dl.inidices_to_string(target[0], target_vocab)
 				print "----------"
 				print "Prediction ",dl.inidices_to_string(prediction[0:key], target_vocab)
 				print "*****"
+				print "Source Gradients", np.mean( source_gradient[0][0,:], axis = 1)
+				print " "
+				print "Target Gradients", np.mean( target_gradient[0][0,:], axis = 1)
+				print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
 
 				batch_no += 1
 				if batch_no % 1000 == 0:
