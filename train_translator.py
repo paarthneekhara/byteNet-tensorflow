@@ -9,7 +9,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--learning_rate', type=float, default=0.001,
 					   help='Learning Rate')
-	parser.add_argument('--batch_size', type=int, default=32,
+	parser.add_argument('--batch_size', type=int, default=1,
 					   help='Learning Rate')
 	parser.add_argument('--bucket_quant', type=int, default=25,
 					   help='Learning Rate')
@@ -33,7 +33,7 @@ def main():
 		'source_file' : args.source_file,
 		'target_file' : args.target_file,
 		'bucket_quant' : args.bucket_quant,
-		#'max_sentences' : 1000
+		'max_sentences' : 1000
 	}
 
 	dl = data_loader_v2.Data_Loader(data_loader_options)

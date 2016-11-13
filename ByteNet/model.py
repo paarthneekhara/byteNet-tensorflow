@@ -22,13 +22,14 @@ class Byte_net_model:
 			[options['n_source_quant'], 2*options['residual_channels']],
 			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
+		# TO BE CONCATENATED WITH THE ENCODER EMBEDDING
 		self.w_target_embedding = tf.get_variable('w_target_embedding', 
-			[options['n_target_quant'], 2*options['residual_channels']],
+			[options['n_target_quant'], options['residual_channels']],
 			initializer=tf.truncated_normal_initializer(stddev=0.02))
 
 
 		if 'source_mask_chars' in options:
-			# FOR EMBEDDING ONLY THE INPUT SENTENCE BEFOR THE PADDING
+			# FOR EMBEDDING ONLY THE INPUT SENTENCE BEFORE THE PADDING
 			# THE OUTPUT NETWORK WHOULD BE CONDITIONED ONLY UPTO INPUT LENGTH
 			# ALSO LOSS NEEDS TO BE CALCULATED UPTO TARGET SENTENCE
 			input_sentence_mask = np.ones( 
@@ -254,7 +255,8 @@ class Byte_net_model:
 		curr_input = input_
 		if encoder_embedding != None:
 			# CONDITION WITH ENCODER EMBEDDING FOR THE TRANSLATION MODEL
-			curr_input = curr_input + encoder_embedding
+			curr_input = tf.concat(2, [input_, encoder_embedding])
+			print "Decoder Input", curr_input
 			
 
 		for layer_no, dilation in enumerate(options['decoder_dilations']):
@@ -270,7 +272,7 @@ class Byte_net_model:
 
 
 
-	def encode_layer(self, input_, dilation, layer_no):
+	def encode_layer(self, input_, dilation, layer_no, last_layer = False):
 		options = self.options
 		relu1 = tf.nn.relu(input_, name = 'enc_relu1_layer{}'.format(layer_no))
 		conv1 = ops.conv1d(relu1, options['residual_channels'], name = 'enc_conv1d_1_layer{}'.format(layer_no))
@@ -297,9 +299,11 @@ class Byte_net_model:
 
 			curr_input = layer_output
 		
-		# processed_output = tf.nn.relu( ops.conv1d(tf.nn.relu(layer_output), 
-		# 	2 * options['residual_channels'], 
-		# 	name = 'encoder_post_processing') )
+		# TO BE CONCATENATED WITH TARGET EMBEDDING
+		processed_output = tf.nn.relu( ops.conv1d(tf.nn.relu(layer_output), 
+			options['residual_channels'], 
+			name = 'encoder_post_processing') )
 
-		# processed_output = tf.mul(processed_output, self.source_masked, name = 'encoder_processed')
-		return layer_output
+		processed_output = tf.mul(processed_output, self.source_masked_d, name = 'encoder_processed')
+
+		return processed_output
