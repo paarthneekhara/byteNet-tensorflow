@@ -2,9 +2,9 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import model_config
-import data_loader
+import data_loader_v2
 from ByteNet import model
-
+import utils
 
 # STILL IN DEVELOPMENT...
 def main():
@@ -17,6 +17,8 @@ def main():
                        help='Data Directory')
 	parser.add_argument('--num_char', type=int, default=1000,
                        help='seed')
+	parser.add_argument('--translator_max_length', type=int, default=500,
+                       help='translator_max_length')
 
 	parser.add_argument('--output_file', type=str, default='sample.txt',
                        help='Output File')
@@ -35,48 +37,61 @@ def main():
 	with open('Data/MachineTranslation/news-commentary-v11.de-en.en') as f:
 		target_sentences = f.read().decode("utf-8").split('\n')
 
-	source_sentence = source_sentences[4]
-	target_sentence = target_sentences[4]
+	idx = 0
+	for i in range(len(source_sentences)):
+		if 'NEW YORK' in target_sentences[i][0:40]:
+			print target_sentences[i]
+			idx = i
+			break
 
-	print source_sentence
-	print target_sentence
+	source_sentences = source_sentences[idx : idx + 1]
+	target_sentences = target_sentences[idx : idx + 1]
 
+	print source_sentences
+	print target_sentences
 
 	data_loader_options = {
 		'model_type' : 'translation',
 		'source_file' : 'Data/MachineTranslation/news-commentary-v11.de-en.de',
-		'target_file' : 'Data/MachineTranslation/news-commentary-v11.de-en.en'
+		'target_file' : 'Data/MachineTranslation/news-commentary-v11.de-en.en',
 		'bucket_quant' : 25,
 	}
 
 	dl = data_loader_v2.Data_Loader(data_loader_options)
 	# buckets, source_vocab, target_vocab, frequent_keys = dl.load_translation_data()
 
-	with open('source.txt', 'wb') as f:
-		f.write(source_sentence.encode('utf8'))
-	source = [ dl.source_vocab(s) for s in source_sentence ]
-	source += [ dl.source_vocab['eol'] ]
+	source_ = []
+	target_ = []
+	for i in range(len(source_sentences)):
+		source_sentence = source_sentences[i]
 
-	new_length = len(source)
-	bucket_quant = data_loader.BUCKET_QUANT
-	if new_length % bucket_quant > 0:
-		new_length = ((new_length/bucket_quant) + 1 ) * bucket_quant
+		source = [ dl.source_vocab[s] for s in source_sentence ]
+		source += [ dl.source_vocab['eol'] ]
 
-	for i in range(len(source), new_length):
-		source += [ dl.source_vocab['padding'] ]
+		new_length = args.translator_max_length
+		# bucket_quant = args.bucket_quant
+		# if new_length % bucket_quant > 0:
+		# 	new_length = ((new_length/bucket_quant) + 1 ) * bucket_quant
 
-	target = [ dl.target_vocab['target_init'] ]
-	for j in range(1, new_length):
-		target += [ dl.target_vocab['padding'] ]
+		for i in range(len(source), new_length):
+			source += [ dl.source_vocab['padding'] ]
 
-	print "SL", len(source)
-	print "TL", len(target)
+		target = [ dl.target_vocab['init'] ]
+		for j in range(1, new_length + 1):
+			target += [ dl.target_vocab['padding'] ]
 
-	source = np.array(source, dtype='int32')
-	source = source.reshape([1, -1])
+		source_.append(source)
+		target_.append(target)
 
-	target = np.array(target, dtype='int32')
-	target = target.reshape([1, -1])
+	
+	source = np.array(source_)
+	target = np.array(target_)
+	# print source_
+	# source = np.array(source_, dtype='int32')
+	# target = np.array(target_, dtype='int32')
+	
+	# print source
+	# print target
 
 	model_options = {
 		'n_source_quant' : len(dl.source_vocab),
@@ -87,13 +102,13 @@ def main():
 		'sample_size' : 10,
 		'decoder_filter_width' : config['decoder_filter_width'],
 		'encoder_filter_width' : config['encoder_filter_width'],
-		'batch_size' : args.batch_size,
+		'batch_size' : 1,
 		'source_mask_chars' : [ dl.source_vocab['padding'] ],
 		'target_mask_chars' : [ dl.target_vocab['padding'] ]
 	}
 
 	byte_net = model.Byte_net_model( model_options )
-	translator = byte_net.build_translator( new_length )
+	translator = byte_net.build_translation_model( args.translator_max_length )
 	
 	sess = tf.InteractiveSession()
 	saver = tf.train.Saver()
@@ -102,30 +117,31 @@ def main():
 	input_batch = target
 	print "INPUT", input_batch
 	print "Source", source
+	
 	for i in range(0, 1000):
 		
-		prediction, encoder_output = sess.run( 
-			[translator['prediction'], translator['encoder_output']], 
+		prediction, probs = sess.run( 
+			[translator['prediction'], translator['probs']], 
 			feed_dict = {
 				translator['source_sentence'] : source,
 				translator['target_sentence'] : input_batch,
 				})
 		# prediction = prediction[0]
-
-		print "encoder"
-		print encoder_output
-		last_prediction =  prediction[i]
-		
-		last_prediction = np.array( [  last_prediction ])
-		
+		last_prediction = np.array( [  utils.weighted_pick( probs[i] ) ])
 		last_prediction = last_prediction.reshape([1,-1])
+		# prediction = np.reshape(prediction, )
+	# 	print "encoder"
+	# 	print encoder_output
+	# 	last_prediction =  prediction[i]
+		
+	# 	last_prediction = np.array( [  last_prediction ])
+		
+	# 	last_prediction = last_prediction.reshape([1,-1])
 		input_batch[:,i+1] = last_prediction[:,0]
 		res = dl.inidices_to_string(input_batch[0], dl.target_vocab)
 		print "RES"
 		print res
-		with open('sample.txt', 'wb') as f:
-			f.write(res)
-
+		
 def weighted_pick(weights):
 	t = np.cumsum(weights)
 	s = np.sum(weights)

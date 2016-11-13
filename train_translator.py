@@ -76,7 +76,10 @@ def main():
 		for _, key in frequent_keys:
 			cnt += 1
 			
+
 			print "KEY", cnt, key
+			if key > 400:
+				continue
 			
 			if len(buckets[key]) < args.batch_size:
 				print "BUCKET TOO SMALL", key
@@ -130,9 +133,9 @@ def main():
 				print "----------"
 				print "Prediction ",dl.inidices_to_string(prediction[0:key], target_vocab)
 				print "*****"
-				print "Source Gradients", np.mean( source_gradient[0][0,:], axis = 1)
+				print "Source Gradients", np.mean( source_gradient[0][0,:], axis = 1)[0:30]	
 				print " "
-				print "Target Gradients", np.mean( target_gradient[0][0,:], axis = 1)
+				print "Target Gradients", np.mean( target_gradient[0][0,:], axis = 1)[0:30]
 				print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
 
 				batch_no += 1

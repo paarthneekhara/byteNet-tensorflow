@@ -26,10 +26,6 @@ class Data_Loader:
 			self.source_vocab = self.build_vocab(self.source_lines)
 			self.target_vocab = self.build_vocab(self.target_lines)
 
-			print "SOURCE VOCAB"
-			for key in self.target_vocab:
-				print key
-
 			print "SOURCE VOCAB SIZE", len(self.source_vocab)
 			print "TARGET VOCAB SIZE", len(self.target_vocab)
 
@@ -114,7 +110,13 @@ class Data_Loader:
 
 	def inidices_to_string(self, sentence, vocab):
 		id_ch = { vocab[ch] : ch for ch in vocab } 
-		return "".join(id_ch[c] for c in sentence)
+		sent = []
+		for c in sentence:
+			if id_ch[c] == 'eol':
+				break
+			sent += id_ch[c]
+
+		return "".join(sent)
 
 	def get_batch_from_pairs(self, pair_list):
 		source_sentences = []

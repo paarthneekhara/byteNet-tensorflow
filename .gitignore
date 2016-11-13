@@ -11,3 +11,4 @@ awstransfer.sh
 Data/Models/*
 logs/*
 Data/MachineTranslation
+source.txt
