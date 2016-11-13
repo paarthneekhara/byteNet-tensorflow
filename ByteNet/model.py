@@ -50,9 +50,9 @@ class Byte_net_model:
 	def build_translation_model(self, sample_size):
 		self.options['sample_size'] = sample_size
 		options = self.options
-		print "Sample Size", options['sample_size']
+		
 		source_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']], name = 'source_sentence')
-		print source_sentence
+		
 
 		target_sentence = tf.placeholder('int32', [options['batch_size'], options['sample_size']+1], name = 'target_sentence')
 		
@@ -64,6 +64,7 @@ class Byte_net_model:
 		
 
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence)
+		# MASK EMBEDDING BEYOND SOURCE LENGTH
 		source_embedding = tf.mul(source_embedding, self.source_masked, name = "source_embedding")
 		
 
@@ -80,8 +81,9 @@ class Byte_net_model:
 			[options['batch_size'], options['sample_size']], 
 			name = 'target_sentence2')
 
+		# FOR MASKING LOSS BEYOND THE TARGET LENGTH
 		self.target_masked = tf.nn.embedding_lookup(self.output_mask, target_sentence2, name = "target_masked")
-		print "Target Masked", self.target_masked
+		
 
 		encoder_output = self.encoder(source_embedding)
 		decoder_output = self.decoder(target1_embedding, encoder_output)
@@ -251,6 +253,7 @@ class Byte_net_model:
 		options = self.options
 		curr_input = input_
 		if encoder_embedding != None:
+			# CONDITION WITH ENCODER EMBEDDING FOR THE TRANSLATION MODEL
 			curr_input = curr_input + encoder_embedding
 			
 
