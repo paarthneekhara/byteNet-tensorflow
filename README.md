@@ -67,7 +67,7 @@ That thou dost see the bear that was the foot,
 #### Translation Results to be updated
 
 ## TODO
-- Implement Sub-batch Normalization. (Contributors welcomed - I don't understand this well)
+- Implement Sub-batch Normalization.
 - Check whether bag of n-grams character encoding makes a difference
 
 ## References
