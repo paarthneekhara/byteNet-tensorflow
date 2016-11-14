@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import model_config
-import data_loader_v2
+import data_loader
 from ByteNet import model
 import utils
 
@@ -57,7 +57,7 @@ def main():
 		'bucket_quant' : 25,
 	}
 
-	dl = data_loader_v2.Data_Loader(data_loader_options)
+	dl = data_loader.Data_Loader(data_loader_options)
 	# buckets, source_vocab, target_vocab, frequent_keys = dl.load_translation_data()
 
 	source_ = []
@@ -129,14 +129,7 @@ def main():
 		# prediction = prediction[0]
 		last_prediction = np.array( [  utils.weighted_pick( probs[i] ) ])
 		last_prediction = last_prediction.reshape([1,-1])
-		# prediction = np.reshape(prediction, )
-	# 	print "encoder"
-	# 	print encoder_output
-	# 	last_prediction =  prediction[i]
 		
-	# 	last_prediction = np.array( [  last_prediction ])
-		
-	# 	last_prediction = last_prediction.reshape([1,-1])
 		input_batch[:,i+1] = last_prediction[:,0]
 		res = dl.inidices_to_string(input_batch[0], dl.target_vocab)
 		print "RES"

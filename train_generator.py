@@ -4,7 +4,7 @@ import argparse
 import model_config
 import data_loader
 from ByteNet import model
-import utlils
+import utils
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -53,7 +53,8 @@ def main():
 	if args.resume_model:
 		saver.restore(sess, args.resume_model)
 
-	text_samples = data_loader.load_text_samples(args.data_dir, model_config.config['sample_size'])
+	dl = data_loader.Data_Loader({'model_type' : 'generator', 'dir_name' : args.data_dir})
+	text_samples = dl.load_generator_data( config['sample_size'])
 	print text_samples.shape
 
 	for i in range(args.max_epochs):
@@ -65,9 +66,8 @@ def main():
 				bn_tensors['sentence'] : text_batch
 				})
 			print "-------------------------------------------------------"
-			print utlils.list_to_string(prediction)
-			print "Loss"
-			print i, batch_no, loss
+			print utils.list_to_string(prediction)
+			print "Loss", i, batch_no, loss
 			print "********************************************************"
 			# print prediction
 			batch_no += 1

@@ -180,16 +180,13 @@ class Byte_net_model:
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
 		probs = tf.nn.softmax(flat_logits)
-		#prediction = tf.nn.softmax(flat_logits)
-		#gradient1  = tf.gradients(prediction, [source_sentence])
-		#gradient2  = tf.gradients(prediction, [target_sentence])
+		
 		tensors = {
 			'source_sentence' : source_sentence,
 			'target_sentence' : target_sentence,
 			'prediction' : prediction,
 			'encoder_output': encoder_output,
 			'probs' : probs
-			#'gradient2' : gradient2
 		}
 
 		return tensors
@@ -223,11 +220,15 @@ class Byte_net_model:
 
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		flat_targets = tf.reshape( target_one_hot, [-1, options['n_target_quant']])
-		target_masked = tf.reshape( self.target_masked, [-1])
 		loss = tf.nn.softmax_cross_entropy_with_logits(flat_logits, flat_targets, name='decoder_cross_entropy_loss')
-		loss = tf.mul( loss, target_masked, name = 'masked_loss')
 
-		loss = tf.div( tf.reduce_sum(loss),tf.reduce_sum(target_masked), name = "Reduced_mean_loss")
+		if 'target_mask_chars' in options:
+			# MASK LOSS BEYOND EOL IN TARGET
+			target_masked = tf.reshape( self.target_masked, [-1])
+			loss = tf.mul( loss, target_masked, name = 'masked_loss')
+			loss = tf.div( tf.reduce_sum(loss),tf.reduce_sum(target_masked), name = "Reduced_mean_loss")
+		else:
+			loss = tf.reduce_mean(loss, name = "Reduced_mean_loss")
 
 		return loss
 

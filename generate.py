@@ -2,9 +2,8 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import model_config
-import data_loader
 from ByteNet import model
-import utlis
+import utils
 
 def main():
 	parser = argparse.ArgumentParser()

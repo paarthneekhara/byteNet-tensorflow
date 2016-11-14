@@ -2,14 +2,14 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import model_config
-import data_loader_v2
+import data_loader
 from ByteNet import model
 
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--learning_rate', type=float, default=0.001,
 					   help='Learning Rate')
-	parser.add_argument('--batch_size', type=int, default=1,
+	parser.add_argument('--batch_size', type=int, default=16,
 					   help='Learning Rate')
 	parser.add_argument('--bucket_quant', type=int, default=25,
 					   help='Learning Rate')
@@ -33,10 +33,9 @@ def main():
 		'source_file' : args.source_file,
 		'target_file' : args.target_file,
 		'bucket_quant' : args.bucket_quant,
-		'max_sentences' : 1000
 	}
 
-	dl = data_loader_v2.Data_Loader(data_loader_options)
+	dl = data_loader.Data_Loader(data_loader_options)
 	buckets, source_vocab, target_vocab, frequent_keys = dl.load_translation_data()
 
 	config = model_config.translator_config
@@ -56,18 +55,12 @@ def main():
 		'target_mask_chars' : [ target_vocab['padding'] ]
 	}
 
-	# temp
-
-	# byte_net = model.Byte_net_model( model_options )
-
-
-	# bn_tensors = byte_net.build_translation_model(sample_size = 100)
+	
 
 	last_saved_model_path = None
 	if args.resume_model:
 		last_saved_model_path = args.resume_model
 
-	
 	
 	print "Number Of Buckets", len(buckets)
 
@@ -126,18 +119,14 @@ def main():
 				train_writer.add_summary(summary, batch_no * (cnt + 1))
 				print "Loss", loss, batch_no, len(buckets[key])/batch_size, i, cnt, key
 				
-				print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+				print "******"
 				print "Source ", dl.inidices_to_string(source[0], source_vocab)
 				print "---------"
 				print "Target ", dl.inidices_to_string(target[0], target_vocab)
 				print "----------"
 				print "Prediction ",dl.inidices_to_string(prediction[0:key], target_vocab)
-				print "*****"
-				print "Source Gradients", np.mean( source_gradient[0][0,:], axis = 1)[0:30]	
-				print " "
-				print "Target Gradients", np.mean( target_gradient[0][0,:], axis = 1)[0:30]
-				print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
-
+				print "******"
+				
 				batch_no += 1
 				if batch_no % 1000 == 0:
 					save_path = saver.save(sess, "Data/Models/model_translation_epoch_{}_{}.ckpt".format(i, cnt))

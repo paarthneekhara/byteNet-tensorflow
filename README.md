@@ -2,46 +2,52 @@
 
 [![Join the chat at https://gitter.im/byteNet-tensorflow/Lobby](https://badges.gitter.im/byteNet-tensorflow/Lobby.svg)](https://gitter.im/byteNet-tensorflow/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This is a tensorflow implementation of the byteNet model from the paper [Neural Machine Translation in Linear Time][1]. 
+This is a tensorflow implementation of the byte-net model from DeepMind's paper [Neural Machine Translation in Linear Time][1]. 
 
 From the abstract
->The ByteNet decoder attains state-of-the-art performance on character-level language modeling and outperforms the previous best results obtained with recurrent neural networks.
+>The ByteNet decoder attains state-of-the-art performance on character-level language modeling and outperforms the previous best results obtained with recurrent neural networks.  The ByteNet also achieves a performance on raw character-level machine translation that approaches that of the best neural translation models that run in quadratic time. The implicit structure learnt by the ByteNet mirrors the expected alignments between the sequences.
 
 ## ByteNet Encoder-Decoder Model:
 ![Model architecture](http://i.imgur.com/IE6Zq6o.jpg)
 
 Image Source - [Neural Machine Translation in Linear Time][1] paper
 
-The model applies dilated 1d convolutions on the sequential data, layer by layer to obain the input encoding. The decoder then applies masked 1d convolutions on the target sequence(combined with the encoding)to obtain the next character in the target sequence.The character generation model is just the byteNet decoder, while the machine translation model is combined encoder and decoder.
+The model applies dilated 1d convolutions on the sequential data, layer by layer to obain the source encoding. The decoder then applies masked 1d convolutions on the target sequence (conditioned by the encoder output) to obtain the next character in the target sequence.The character generation model is just the byteNet decoder, while the machine translation model is the combined encoder and decoder.
 
 ## Implementation Notes
 1. The model has been defined in ```ByteNet/model.py```. ```ByteNet/ops.py``` contains the dilated convolution implementation (adapted from [tensorflow wavenet][2] ).
 2. The model can be configured by editing model_config.py.
 3. Sub-batch normalisation has not been implemented.
-4. The model (byteNet decoder) has been tested on character generation and not machine transalation. (Work in progress).
+4. Bags of n-grams have not been used.
+5. Number of residual channels 512 (Configurable in model_config.py).
+
+## Requirements
+- Python 2.7.6
+- Tensorflow >= rc0.10
 
 ## Datasets
-The model has been trained on Shakespeare text (the same dataset which was used in Karpathy's blog). I have included the text file in the repository ```Data/shakespeare.txt```.
+- The character generation model has been trained on [Shakespeare text][4]. I have included the text file in the repository ```Data/shakespeare.txt```.
+- The machine translation model has been trained for german to english translation. You may download the news commentary dataset from here [http://www.statmt.org/wmt16/translation-task.html][5]
 
 ## Training
-Configure the model by editing ```model_config.py```. Train on a text corpus by
+1. Text Generation - Configure the model by editing ```model_config.py```. Train on a text corpus by
+  
+  ```python train_generator.py --data_dir=PATH_TO_FOLDER_CONTAINING_TXT_FILES```
+  
+  ```python train.py --help``` for more options.
+2. Machine Translation - Configure the model by editing ```model_config.py```. Train translation model from source to target by:
+  
+  ```python train_translator.py --source_file=SOURCE_FILE_PATH --target_file=TARGET_FILE_PATH```
+  
+  ```python train.py --help``` for more options.
 
-```python train.py --data_dir=PATH_TO_FOLDER_CONTAINING_TXT_FILES```
+## Results
+| Text Generation        | Machine Translation  |
+| ----- | -----|
+| Generate new samples using : ```python generate.py --seed="SOME_TEXT_TO_START_WITH"```| Translate Using: ```python translate.py --source_file=PATH_TO_SOURCE``` |
 
-```python train.py --help``` for more options.
+#### Sample Generations
 
-## Text Generation
-Generate new text samples using
-
-```python generate.py --seed="SOME_TEXT_TO_START_WITH" --num_chars=NUM_CHARS_TO_GENERATE --model_path=PATH_TO_TRAINED_MODEL --output_file=OUTPUT_FILE_PATH```
-
-Note - This is not the most efficient generator implementation. Refer to tensorflow wavenet generator implementation for a faster generator.
-
-## Samples Generated
-I haven't experimented much as of now. Following are some text samples hallucinated by the network
-
-
-seed = "ANTONIO"
 ```
 ANTONIO:
 What say you to this part of this to thee?
@@ -58,36 +64,18 @@ That thou dost see the bear that was the foot,
 
 ```
 
-seed = "PORTIA"
-```
-PORTIA:
-What say these fairs, man? what say these samese me?
-
-First Citizen:
-The king is so indeed, sir, the sin, that I was,
-That the best contrary to the court of France,
-That thou wert bear to the mouth of this son,
-That thou dost speak to me and the sense of France,
-That thou dost stand and stand and true and souls,
-```
-
-## Pretrained Model
-You may play with the pretrained model on the shakespeare dataset. Save the model in ```Data/Models```.
-
-[Link to the trained model][3].
-
+#### Translation Results to be updated
 
 ## TODO
-- Train the model on machine-translation.
 - Implement Sub-batch Normalization. (Contributors welcomed - I don't understand this well)
 - Check whether bag of n-grams character encoding makes a difference
-- Efficient generator implementation.
 
 ## References
 - [Neural Machine Translation in Linear Time][1] paper
 - [Tensorflow Wavenet][2] code
 
-
 [1]:https://arxiv.org/abs/1610.10099
 [2]:https://github.com/ibab/tensorflow-wavenet
 [3]:https://drive.google.com/file/d/0B30fmeZ1slbBYWVSWnMyc3hXQVU/view?usp=sharing
+[4]:http://cs.stanford.edu/people/karpathy/char-rnn/
+[5]:http://www.statmt.org/wmt16/translation-task.html
