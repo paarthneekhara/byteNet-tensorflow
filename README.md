@@ -44,7 +44,7 @@ The model applies dilated 1d convolutions on the sequential data, layer by layer
 ## Results
 | Text Generation        | Machine Translation  |
 | ----- | -----|
-| Generate new samples using : ```python generate.py --seed="SOME_TEXT_TO_START_WITH"```| Translate Using: ```python translate.py --source_file=PATH_TO_SOURCE``` |
+| Generate new samples using : ```python generate.py --seed="SOME_TEXT_TO_START_WITH"```| translate.py still in development. You can test sample translations from the dataset using ```python translate.py``` |
 
 #### Sample Generations
 
