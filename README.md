@@ -22,8 +22,8 @@ The model applies dilated 1d convolutions on the sequential data, layer by layer
 5. Number of residual channels 512 (Configurable in model_config.py).
 
 ## Requirements
-- Python 2.7.6
-- Tensorflow >= rc0.10
+- Python 3.3+
+- TensorFlow r1.0+
 
 ## Datasets
 - The character generation model has been trained on [Shakespeare text][4]. I have included the text file in the repository ```Data/shakespeare.txt```.

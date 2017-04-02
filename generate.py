@@ -9,7 +9,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	
 	
-	parser.add_argument('--model_path', type=str, default="Data/Models/model_epoch_6.ckpt",
+	parser.add_argument('--model_path', type=str, default="Data/Models/model_epoch_0.ckpt",
                        help='Pre-Trained Model Path')
 	parser.add_argument('--data_dir', type=str, default='Data',
                        help='Data Directory')
@@ -24,7 +24,7 @@ def main():
 
 	args = parser.parse_args()
 	
-	config = model_config.config
+	config = model_config.predictor_config
 
 	model_options = {
 		'n_source_quant' : config['n_source_quant'],
@@ -49,7 +49,7 @@ def main():
 
 	
 	input_batch = seed_
-	print "INPUT", input_batch
+	print("INPUT", input_batch)
 	for i in range(0, args.num_char - len(args.seed)):
 		
 		prediction, probs = sess.run( [generator['prediction'], generator['probs']], 
@@ -63,9 +63,9 @@ def main():
 		res = utils.list_to_string(input_batch[0, 0 : i + len(args.seed) + 1])
 		
 		if i % 100 == 0:
-			print res
+			print(res)
 
-		with open(args.output_file, 'wb') as f:
+		with open(args.output_file, 'w') as f:
 			f.write(res)
 
 

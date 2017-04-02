@@ -1,8 +1,8 @@
-import tensorflow as tf
-import numpy as np
 import argparse
-import model_config
+import tensorflow as tf
+
 import data_loader
+import model_config
 from ByteNet import model
 
 def main():
@@ -23,7 +23,7 @@ def main():
                        help='Source File')
 	parser.add_argument('--target_file', type=str, default='Data/MachineTranslation/news-commentary-v11.de-en.en',
                        help='Target File')
-	
+
 
 
 	args = parser.parse_args()
@@ -62,7 +62,7 @@ def main():
 		last_saved_model_path = args.resume_model
 
 	
-	print "Number Of Buckets", len(buckets)
+	print("Number Of Buckets", len(buckets))
 
 	for i in range(1, args.max_epochs):
 		cnt = 0
@@ -70,12 +70,12 @@ def main():
 			cnt += 1
 			
 
-			print "KEY", cnt, key
+			print("KEY", cnt, key)
 			if key > 400:
 				continue
 			
 			if len(buckets[key]) < args.batch_size:
-				print "BUCKET TOO SMALL", key
+				print("BUCKET TOO SMALL", key)
 				continue
 
 			sess = tf.InteractiveSession()
@@ -113,32 +113,29 @@ def main():
 					feed_dict = {
 						bn_tensors['source_sentence'] : source,
 						bn_tensors['target_sentence'] : target,
-
 					})
 				
 				train_writer.add_summary(summary, batch_no * (cnt + 1))
-				print "Loss", loss, batch_no, len(buckets[key])/batch_size, i, cnt, key
+				print("Loss", loss, batch_no, len(buckets[key])/batch_size, i, cnt, key)
 				
-				print "******"
-				print "Source ", dl.inidices_to_string(source[0], source_vocab)
-				print "---------"
-				print "Target ", dl.inidices_to_string(target[0], target_vocab)
-				print "----------"
-				print "Prediction ",dl.inidices_to_string(prediction[0:key], target_vocab)
-				print "******"
+				print("******")
+				print("Source ", dl.inidices_to_string(source[0], source_vocab))
+				print("---------")
+				print("Target ", dl.inidices_to_string(target[0], target_vocab))
+				print("----------")
+				print("Prediction ",dl.inidices_to_string(prediction[0:key], target_vocab))
+				print("******")
 				
 				batch_no += 1
 				if batch_no % 1000 == 0:
-					save_path = saver.save(sess, "Data/Models/model_translation_epoch_{}_{}.ckpt".format(i, cnt))
 					last_saved_model_path = "Data/Models/model_translation_epoch_{}_{}.ckpt".format(i, cnt)
-					
-			
-			save_path = saver.save(sess, "Data/Models/model_translation_epoch_{}.ckpt".format(i))
+					saver.save(sess, last_saved_model_path)
+
 			last_saved_model_path = "Data/Models/model_translation_epoch_{}.ckpt".format(i)
+			saver.save(sess, last_saved_model_path)
 
 			tf.reset_default_graph()
 			sess.close()
-				
 
 if __name__ == '__main__':
 	main()

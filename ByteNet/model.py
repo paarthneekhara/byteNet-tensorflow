@@ -1,6 +1,7 @@
-import tensorflow as tf
 import numpy as np
-import ops
+import tensorflow as tf
+
+from ByteNet import ops
 
 class Byte_net_model:
 	def __init__(self, options):
@@ -30,8 +31,8 @@ class Byte_net_model:
 
 		if 'source_mask_chars' in options:
 			# FOR EMBEDDING ONLY THE INPUT SENTENCE BEFORE THE PADDING
-			# THE OUTPUT NETWORK WHOULD BE CONDITIONED ONLY UPTO INPUT LENGTH
-			# ALSO LOSS NEEDS TO BE CALCULATED UPTO TARGET SENTENCE
+			# THE OUTPUT NETWORK WOULD BE CONDITIONED ONLY UP TO INPUT LENGTH
+			# ALSO LOSS NEEDS TO BE CALCULATED UP TO TARGET SENTENCE
 			input_sentence_mask = np.ones( 
 				(options['n_source_quant'], 2 * options['residual_channels']), dtype = 'float32')
 
@@ -91,7 +92,7 @@ class Byte_net_model:
 
 		loss = self.loss(decoder_output, target_sentence2)
 
-		tf.scalar_summary('LOSS', loss)
+		tf.summary.scalar('loss', loss)
 
 		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
@@ -137,12 +138,12 @@ class Byte_net_model:
 		source_embedding = tf.nn.embedding_lookup(self.w_source_embedding, source_sentence, name = "source_embedding")
 		decoder_output = self.decoder(source_embedding)
 		loss = self.loss(decoder_output, target_sentence)
-		
-		tf.scalar_summary('LOSS', loss)
 
-		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
+		tf.summary.scalar('loss', loss)
+
+		flat_logits = tf.reshape(decoder_output, [-1, options['n_target_quant']])
 		prediction = tf.argmax(flat_logits, 1)
-		
+
 		variables = tf.trainable_variables()
 		
 		tensors = {
@@ -218,8 +219,8 @@ class Byte_net_model:
 			dtype = tf.float32)
 		
 
-		flat_logits = tf.reshape( decoder_output, [-1, options['n_target_quant']])
-		flat_targets = tf.reshape( target_one_hot, [-1, options['n_target_quant']])
+		flat_logits = tf.reshape(decoder_output, [-1, options['n_target_quant']])
+		flat_targets = tf.reshape(target_one_hot, [-1, options['n_target_quant']])
 		loss = tf.nn.softmax_cross_entropy_with_logits(flat_logits, flat_targets, name='decoder_cross_entropy_loss')
 
 		if 'target_mask_chars' in options:
@@ -232,40 +233,49 @@ class Byte_net_model:
 
 		return loss
 
-
+	# Residual block
 	def decode_layer(self, input_, dilation, layer_no):
 		options = self.options
-		relu1 = tf.nn.relu(input_, name = 'dec_relu1_layer{}'.format(layer_no))
-		conv1 = ops.conv1d(relu1, options['residual_channels'], name = 'dec_conv1d_1_layer{}'.format(layer_no))
-		
 
+		# Input dimension
+		in_dim = input_.get_shape().as_list()[-1]
+
+		# Reduce dimension
+		relu1 = tf.nn.relu(input_, name = 'dec_relu1_layer{}'.format(layer_no))
+		conv1 = ops.conv1d(relu1, in_dim / 2, name = 'dec_conv1d_1_layer{}'.format(layer_no))
+
+		# 1 x k dilated convolution
 		relu2 = tf.nn.relu(conv1, name = 'enc_relu2_layer{}'.format(layer_no))
-		dilated_conv = ops.dilated_conv1d(relu2, options['residual_channels'], 
-			dilation, options['decoder_filter_width'],
-			causal = True, 
-			name = "dec_dilated_conv_laye{}".format(layer_no)
-			)
-		
+		dilated_conv = ops.dilated_conv1d(
+			relu2,
+			output_channels = in_dim / 2,
+			dilation        = dilation,
+			filter_width    = options['decoder_filter_width'],
+			causal          = True,
+			name            = "dec_dilated_conv_layer{}".format(layer_no))
+
+		# Restore dimension
 		relu3 = tf.nn.relu(dilated_conv, name = 'dec_relu3_layer{}'.format(layer_no))
-		conv2 = ops.conv1d(relu3, 2 * options['residual_channels'], name = 'dec_conv1d_2_layer{}'.format(layer_no))
-		
+		conv2 = ops.conv1d(relu3, in_dim, name = 'dec_conv1d_2_layer{}'.format(layer_no))
+
+		# Residual connection
 		return input_ + conv2
 
 	def decoder(self, input_, encoder_embedding = None):
 		options = self.options
 		curr_input = input_
-		if encoder_embedding != None:
+		if encoder_embedding is not None:
 			# CONDITION WITH ENCODER EMBEDDING FOR THE TRANSLATION MODEL
 			curr_input = tf.concat(2, [input_, encoder_embedding])
-			print "Decoder Input", curr_input
+			print("Decoder Input", curr_input)
 			
 
 		for layer_no, dilation in enumerate(options['decoder_dilations']):
-			layer_output = self.decode_layer(curr_input, dilation, layer_no)
-			curr_input = layer_output
+			curr_input = self.decode_layer(curr_input, dilation, layer_no)
 
 
-		processed_output = ops.conv1d(tf.nn.relu(layer_output), 
+		processed_output = ops.conv1d(
+			tf.nn.relu(curr_input),
 			options['n_target_quant'], 
 			name = 'decoder_post_processing')
 
@@ -273,7 +283,7 @@ class Byte_net_model:
 
 
 
-	def encode_layer(self, input_, dilation, layer_no, last_layer = False):
+	def encode_layer(self, input_, dilation, layer_no):
 		options = self.options
 		relu1 = tf.nn.relu(input_, name = 'enc_relu1_layer{}'.format(layer_no))
 		conv1 = ops.conv1d(relu1, options['residual_channels'], name = 'enc_conv1d_1_layer{}'.format(layer_no))
