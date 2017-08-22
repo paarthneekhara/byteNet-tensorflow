@@ -13,3 +13,4 @@ logs/*
 Data/MachineTranslation
 source.txt
 data_loader_old.py
+connect.sh

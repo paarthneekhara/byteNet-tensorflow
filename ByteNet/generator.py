@@ -34,8 +34,10 @@ class ByteNet_Generator:
         target_flat = tf.reshape(target_sentence, [-1])
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels = target_flat, logits = logits_flat)
 
+        self.arg_max_prediction = tf.argmax(logits_flat, 1)
         self.loss = tf.reduce_mean(loss)
-
+        tf.summary.scalar('loss', self.loss)
+        
     def build_generator(self, reuse = False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
@@ -57,9 +59,9 @@ class ByteNet_Generator:
             options['vocab_size'], name = 'logits')
         logits_flat = tf.reshape(logits, [-1, options['vocab_size']])
         probs_flat = tf.nn.softmax(logits_flat)
-
-        probs = tf.reshape(probs_flat, [-1, tf.shape(self.seed_sentence)[1], options['vocab_size']])
-        print probs
+        
+        self.g_probs = tf.reshape(probs_flat, [-1, tf.shape(self.seed_sentence)[1], options['vocab_size']])
+        
 
 def main():
     options = {

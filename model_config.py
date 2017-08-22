@@ -9,6 +9,7 @@ predictor_config = {
 	"residual_channels": 512,
 	"n_target_quant": 256,
 	"n_source_quant": 256,
+	"sample_size" : 1000
 }
 
 translator_config = {
