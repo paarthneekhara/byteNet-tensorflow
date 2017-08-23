@@ -47,9 +47,10 @@ Create the following directories ```Data/tb_summaries/translator_model```, ```Da
     
 
 ## Generating Samples
-| Text Generation        | Machine Translation  |
-| ----- | -----|
-| Generate new samples using : ```python generate.py --seed="SOME_TEXT_TO_START_WITH"``` --sample_size=<SIZE OF GENERATED SEQUENCE>| You can test sample translations from the dataset using ```python translate.py```. This will pick random source sentences from the dataset and translate them.|
+- Generate new samples using : 
+  * ```python generate.py --seed="SOME_TEXT_TO_START_WITH" --sample_size=<SIZE OF GENERATED SEQUENCE>```
+- You can test sample translations from the dataset using ```python translate.py```. 
+  * This will pick random source sentences from the dataset and translate them.
 
 #### Sample Generations
 
