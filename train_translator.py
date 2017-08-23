@@ -32,6 +32,8 @@ def main():
                        help='Sample generator output evry x steps')
     parser.add_argument('--top_k', type=int, default=5,
                        help='Sample from top k predictions')
+    parser.add_argument('--resume_from_bucket', type=int, default=0,
+                       help='Resume From Bucket')
     args = parser.parse_args()
     
     data_loader_options = {
@@ -83,6 +85,9 @@ def main():
     batch_size = args.batch_size
     for epoch in range(args.max_epochs):
         for bucket_size in bucket_sizes:
+            if epoch == 0 and bucket_size < args.resume_from_bucket:
+                continue
+
             batch_no = 0
             while (batch_no + 1) * batch_size < len(buckets[bucket_size]):
                 start = time.clock()
@@ -148,8 +153,9 @@ def main():
 
                             if col == bucket_size - 1:
                                 try:
-                                    log_file.write(dl.inidices_to_string(generated_target[bi], target_vocab))
-                                    log_file.write(dl.inidices_to_string(target[bi], target_vocab))
+                                    log_file.write("Predicted: " + dl.inidices_to_string(generated_target[bi], target_vocab) + '\n')
+                                    log_file.write("Actual Target: " + dl.inidices_to_string(target[bi], target_vocab) + '\n')
+                                    log_file.write("Actual Source: " + dl.inidices_to_string(source[bi], source_vocab) + '\n *******')
                                 except:
                                     pass
                                 print "***************"

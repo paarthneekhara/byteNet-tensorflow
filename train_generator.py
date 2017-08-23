@@ -18,6 +18,8 @@ def main():
                        help='Sample generator output evry x steps')
     parser.add_argument('--summary_every', type=int, default=50,
                        help='Sample generator output evry x steps')
+    parser.add_argument('--save_model_every', type=int, default=1500,
+                       help='Save model every')
     parser.add_argument('--sample_size', type=int, default=300,
                        help='Sampled output size')
     parser.add_argument('--top_k', type=int, default=5,
@@ -128,8 +130,8 @@ def main():
                 f.write(dl.inidices_to_string(seed_sentence[0], vocab))
                 f.close()
 
-            
-        save_path = saver.save(sess, "Data/Models/generation_model/model_epoch_{}.ckpt".format(epoch))
+            if step % args.save_model_every == 0:
+                save_path = saver.save(sess, "Data/Models/generation_model/model_epoch_{}_{}.ckpt".format(epoch, step))
 
 if __name__ == '__main__':
     main()

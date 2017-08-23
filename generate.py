@@ -43,7 +43,7 @@ def main():
     }
 
     generator_model = generator.ByteNet_Generator( model_options )
-    generator_model.build_generator(reuse)
+    generator_model.build_generator()
     
 
     sess = tf.InteractiveSession()

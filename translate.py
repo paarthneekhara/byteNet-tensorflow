@@ -22,6 +22,10 @@ def main():
                        help='Target File')
     parser.add_argument('--top_k', type=int, default=5,
                        help='Sample from top k predictions')
+    parser.add_argument('--batch_size', type=int, default=16,
+                       help='Batch Size')
+    parser.add_argument('--bucket_size', type=int, default=None,
+                       help='Bucket Size')
     args = parser.parse_args()
     
     data_loader_options = {
@@ -61,7 +65,10 @@ def main():
     bucket_sizes = [bucket_size for bucket_size in buckets]
     bucket_sizes.sort()
 
-    bucket_size = random.choice(bucket_sizes)
+    if not args.bucket_size:
+        bucket_size = random.choice(bucket_sizes)
+    else:
+        bucket_size = args.bucket_size
 
     source, target = dl.get_batch_from_pairs( 
         random.sample(buckets[bucket_size], args.batch_size)
@@ -97,7 +104,8 @@ def main():
                     log_file.write("Actual Source: " + dl.inidices_to_string(source[bi], source_vocab) + '\n *******')
                 except:
                     pass
-        log_file.close()
+                
+    log_file.close()
 
 
 
