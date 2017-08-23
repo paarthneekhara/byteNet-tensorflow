@@ -14,3 +14,7 @@ Data/MachineTranslation
 source.txt
 data_loader_old.py
 connect.sh
+sample.sh
+tensorboard.sh
+Data/tb_summaries/*
+Data/*.txt

@@ -6,6 +6,7 @@ import data_loader
 from ByteNet import generator
 import utils
 import shutil
+import time
 
 def main():
     parser = argparse.ArgumentParser()
@@ -13,9 +14,11 @@ def main():
                        help='Learning Rate')
     parser.add_argument('--batch_size', type=int, default=1,
                        help='Learning Rate')
-    parser.add_argument('--sample_every', type=int, default=10,
+    parser.add_argument('--sample_every', type=int, default=500,
                        help='Sample generator output evry x steps')
-    parser.add_argument('--sample_size', type=int, default=100,
+    parser.add_argument('--summary_every', type=int, default=50,
+                       help='Sample generator output evry x steps')
+    parser.add_argument('--sample_size', type=int, default=300,
                        help='Sampled output size')
     parser.add_argument('--top_k', type=int, default=5,
                        help='Sample from top k predictions')
@@ -40,7 +43,7 @@ def main():
     config = model_config.predictor_config
 
     dl = data_loader.Data_Loader({'model_type' : 'generator', 'dir_name' : args.text_dir})
-    text_samples, vocab = dl.load_generator_data( config['sample_size'])
+    text_samples, vocab = dl.load_generator_data(config['sample_size'])
     print text_samples.shape
     
     model_options = {
@@ -75,6 +78,9 @@ def main():
         batch_no = 0
         batch_size = args.batch_size
         while (batch_no+1) * batch_size < text_samples.shape[0]:
+
+            start = time.clock()
+
             text_batch = text_samples[batch_no*batch_size : (batch_no + 1)*batch_size, :]
             _, loss, prediction = sess.run( 
                 [optim, generator_model.loss, 
@@ -82,22 +88,27 @@ def main():
                 feed_dict = {
                     generator_model.t_sentence : text_batch
                 })
+            end = time.clock()
             print "-------------------------------------------------------"
-            print "LOSS: {}\tEPOCH: {}\tBATCH_NO: {}\t STEP:{}".format(loss, epoch, batch_no, step)
-            print dl.inidices_to_string(prediction, vocab)
-            print "********************************************************"
-            # print prediction
+            print "LOSS: {}\tEPOCH: {}\tBATCH_NO: {}\t STEP:{}\t total_batches:{}".format(
+                loss, epoch, batch_no, step, text_samples.shape[0]/args.batch_size)
+            print "TIME FOR BATCH", end - start
+            print "TIME FOR EPOCH (mins)", (end - start) * (text_samples.shape[0]/args.batch_size)/60.0
+            
             batch_no += 1
             step += 1
             
             if step % args.summary_every == 0:
-                [summary] = sess.runf([merged_summary], feed_dict = {
+                [summary] = sess.run([merged_summary], feed_dict = {
                     generator_model.t_sentence : text_batch
                 })
                 train_writer.add_summary(summary, step)
-
+                print dl.inidices_to_string(prediction, vocab)
+            
+            print "********************************************************"
+                
             if step % args.sample_every == 0:
-                seed_sentence = np.array([dl.string_to_indices(args.seed)], dtype = 'int32' )
+                seed_sentence = np.array([dl.string_to_indices(args.seed, vocab)], dtype = 'int32' )
 
                 for col in range(args.sample_size):
                     [probs] = sess.run([generator_model.g_probs], 
@@ -112,6 +123,10 @@ def main():
 
                     seed_sentence = np.insert(seed_sentence, seed_sentence.shape[1], curr_preds, axis = 1)
                     print col, dl.inidices_to_string(seed_sentence[0], vocab)
+
+                f = open('Data/generator_sample.txt', 'wb')
+                f.write(dl.inidices_to_string(seed_sentence[0], vocab))
+                f.close()
 
             
         save_path = saver.save(sess, "Data/Models/generation_model/model_epoch_{}.ckpt".format(epoch))

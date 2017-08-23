@@ -65,6 +65,7 @@ def byetenet_residual_block(input_, dilation, layer_no,
                 causal = causal,
                 name = "dilated_conv"
                 )
+            print dilated_conv
             dilated_conv = layer_normalization(dilated_conv, name="ln3", trainable = train)
             relu3 = tf.nn.relu(dilated_conv)
             conv2 = conv1d(relu3, 2 * residual_channels, name = 'conv1d_2')

@@ -67,14 +67,13 @@ class Data_Loader:
 
         buckets = self.create_buckets(source_lines, target_lines)
 
-        frequent_keys = [ (-len(buckets[key]), key) for key in buckets ]
-        frequent_keys.sort()
+        # frequent_keys = [ (-len(buckets[key]), key) for key in buckets ]
+        # frequent_keys.sort()
 
-        print "Source", self.inidices_to_string( buckets[ frequent_keys[3][1] ][5][0], self.source_vocab)
-        print "Target", self.inidices_to_string( buckets[ frequent_keys[3][1] ][5][1], self.target_vocab)
+        # print "Source", self.inidices_to_string( buckets[ frequent_keys[3][1] ][5][0], self.source_vocab)
+        # print "Target", self.inidices_to_string( buckets[ frequent_keys[3][1] ][5][1], self.target_vocab)
         
-        print len(frequent_keys)
-        return buckets, self.source_vocab, self.target_vocab, frequent_keys
+        return buckets, self.source_vocab, self.target_vocab
 
 
 

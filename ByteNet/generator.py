@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 import ops
 
 class ByteNet_Generator:
@@ -33,11 +32,12 @@ class ByteNet_Generator:
         logits_flat = tf.reshape(logits, [-1, options['vocab_size']])
         target_flat = tf.reshape(target_sentence, [-1])
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels = target_flat, logits = logits_flat)
-
-        self.arg_max_prediction = tf.argmax(logits_flat, 1)
         self.loss = tf.reduce_mean(loss)
-        tf.summary.scalar('loss', self.loss)
         
+        self.arg_max_prediction = tf.argmax(logits_flat, 1)
+        
+        tf.summary.scalar('loss', self.loss)
+
     def build_generator(self, reuse = False):
         if reuse:
             tf.get_variable_scope().reuse_variables()
