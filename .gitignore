@@ -18,3 +18,5 @@ sample.sh
 tensorboard.sh
 Data/tb_summaries/*
 Data/*.txt
+dump/*
+Data/translator_model/*

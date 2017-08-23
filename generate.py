@@ -2,73 +2,76 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import model_config
-from ByteNet import model
+import data_loader
+from ByteNet import generator
 import utils
+import shutil
+import time
 
 def main():
-	parser = argparse.ArgumentParser()
-	
-	
-	parser.add_argument('--model_path', type=str, default="Data/Models/model_epoch_6.ckpt",
-                       help='Pre-Trained Model Path')
-	parser.add_argument('--data_dir', type=str, default='Data',
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--sample_size', type=int, default=300,
+                       help='Sampled output size')
+    parser.add_argument('--top_k', type=int, default=5,
+                       help='Sample from top k predictions')
+    parser.add_argument('--model_path', type=str, default=None,
+                       help='Pre-Trained Model Path, to resume from')
+    parser.add_argument('--text_dir', type=str, default='Data/generator_training_data',
+                       help='Directory containing text files')
+    parser.add_argument('--data_dir', type=str, default='Data',
                        help='Data Directory')
-	parser.add_argument('--seed', type=str, default="ANTONIO",
-                       help='seed')
-	parser.add_argument('--num_char', type=int, default=1000,
-                       help='seed')
-
-	parser.add_argument('--output_file', type=str, default='sample.txt',
-                       help='Output File')
+    parser.add_argument('--seed', type=str, default='All',
+                       help='Seed for text generation')
+    
 
 
-	args = parser.parse_args()
-	
-	config = model_config.config
+    args = parser.parse_args()
+    
+    # model_config = json.loads( open('model_config.json').read() )
+    config = model_config.predictor_config
 
-	model_options = {
-		'n_source_quant' : config['n_source_quant'],
-		'n_target_quant' : config['n_target_quant'],
-		'residual_channels' : config['residual_channels'],
-		'decoder_dilations' : config['decoder_dilations'],
-		'sample_size' : args.num_char,
-		'decoder_filter_width' : config['decoder_filter_width'],
-		'batch_size' : 1,
-	}
+    dl = data_loader.Data_Loader({'model_type' : 'generator', 'dir_name' : args.text_dir})
+    _, vocab = dl.load_generator_data(config['sample_size'])
+    
+    
+    model_options = {
+        'vocab_size' : len(vocab),
+        'residual_channels' : config['residual_channels'],
+        'dilations' : config['dilations'],
+        'filter_width' : config['filter_width'],
+    }
 
-	seed_ = [ ord(s) for s in args.seed ] + [0 for i in range(args.num_char - len(args.seed))]
-	seed_ = np.array(seed_, dtype='int32')
-	seed_ = seed_.reshape([1, -1])
+    generator_model = generator.ByteNet_Generator( model_options )
+    generator_model.build_generator(reuse)
+    
 
-	byte_net = model.Byte_net_model( model_options )
-	generator = byte_net.build_generator( args.num_char )
-	
-	sess = tf.InteractiveSession()
-	saver = tf.train.Saver()
-	saver.restore(sess, args.model_path)
+    sess = tf.InteractiveSession()
+    tf.initialize_all_variables().run()
+    saver = tf.train.Saver()
+    
+    if args.model_path:
+        saver.restore(sess, args.model_path)
 
-	
-	input_batch = seed_
-	print "INPUT", input_batch
-	for i in range(0, args.num_char - len(args.seed)):
-		
-		prediction, probs = sess.run( [generator['prediction'], generator['probs']], 
-			feed_dict = {
-				generator['source_sentence'] : input_batch
-				})
-		
-		last_prediction = np.array( [  utils.weighted_pick( probs[i + len(args.seed) - 1] ) ])
-		last_prediction = last_prediction.reshape([1,-1])
-		input_batch[:,i + len(args.seed)] = last_prediction
-		res = utils.list_to_string(input_batch[0, 0 : i + len(args.seed) + 1])
-		
-		if i % 100 == 0:
-			print res
+    seed_sentence = np.array([dl.string_to_indices(args.seed, vocab)], dtype = 'int32' )
 
-		with open(args.output_file, 'wb') as f:
-			f.write(res)
+    for col in range(args.sample_size):
+        [probs] = sess.run([generator_model.g_probs], 
+            feed_dict = {
+                generator_model.seed_sentence :seed_sentence 
+            })
 
+        curr_preds = []
+        for bi in range(probs.shape[0]):
+            pred_word = utils.sample_top(probs[bi][-1], top_k = args.top_k )
+            curr_preds.append(pred_word)
+
+        seed_sentence = np.insert(seed_sentence, seed_sentence.shape[1], curr_preds, axis = 1)
+        print col, dl.inidices_to_string(seed_sentence[0], vocab)
+
+        f = open('Data/generator_sample.txt', 'wb')
+        f.write(dl.inidices_to_string(seed_sentence[0], vocab))
+        f.close()
 
 if __name__ == '__main__':
-	main()
-
+    main()
